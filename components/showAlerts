@@ -1,0 +1,21 @@
+import React from 'react';
+import { Alert } from 'react-native';
+
+interface IShowAlertsProps {
+  // props
+  alertArray: Array<string>;
+}
+
+const showAlerts = ({ alertArray }: IShowAlertsProps) => {
+  for (let i = 0; i < alertArray.length; i++) {
+    Alert.alert(
+      'Alert',
+      alertArray[i],
+      [
+        { text: 'OK', onPress: () => //console.log('Alert dismissed') }
+      ]
+    );
+  }
+};
+
+export default showAlerts;
