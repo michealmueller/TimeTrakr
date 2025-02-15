@@ -28,9 +28,9 @@ class TimerClass extends React.Component<Props, StopwatchState> {
       mountedAndReady: false,
       currentTime: 0,
       formattedTime: '00:00:00:000',
+      intervalId: undefined,
+      slices: [],
     };
-    //console.log('Instantiated State: ', this.state);
-    
   }
 
   componentDidMount() {
@@ -38,6 +38,7 @@ class TimerClass extends React.Component<Props, StopwatchState> {
   }
 
   componentWillUnmount() {
+    //clean up after ourselves a.k.a stop the timer
     if (this.state.intervalId) {
       clearInterval(this.state.intervalId);
     }
@@ -50,21 +51,16 @@ class TimerClass extends React.Component<Props, StopwatchState> {
     if (stopwatch.isRunning()) {
       // Shut it down
       stopwatch.stop();
-
-      this.updateSlices(); // Ensure slices are updated when stopwatch is stopped
-      
-      //this.handleClearInterval();
+      this.updateSlicesState(); 
+      this.handleClearInterval();
     } else {
       stopwatch.start();
       const newIntervalId = setInterval(() => {
         this.getTime();
       }, 30.9999999); // Update every 30.9999999 milliseconds
-
-        this.setState({ intervalId: newIntervalId });
-        console.log('Stopwatch started.');
-      
-
-      this.updateSlices();
+      this.setState({ intervalId: newIntervalId });
+      console.log('Stopwatch started.');
+      this.updateSlicesState();
     }
   }
 
@@ -77,12 +73,9 @@ class TimerClass extends React.Component<Props, StopwatchState> {
     });
   }
 
-  updateSlices() {
+  updateSlicesState() {
     const slices = this.state.stopwatch.getCompletedAndPendingSlices();
-    
     this.setState({ slices });
-
-    //console.log('Updated Slices: ', slices);
   }
 
   handleReset() {
@@ -106,7 +99,7 @@ class TimerClass extends React.Component<Props, StopwatchState> {
     } catch(e) {
       console.error('Error recording slice', e);
     }
-    this.updateSlices();
+    this.updateSlicesState();
   }
 
   protected formatTime(milliseconds: number): string {
@@ -143,6 +136,31 @@ class TimerClass extends React.Component<Props, StopwatchState> {
     }
   }
 
+  renderSlices = () => {
+    const { slices = [] } = this.state;
+    return (
+      <DataTable>
+        <DataTable.Header>
+          <DataTable.Title numeric>Start Time</DataTable.Title>
+          <DataTable.Title numeric>End Time</DataTable.Title>
+          <DataTable.Title numeric>Total Duration</DataTable.Title>
+        </DataTable.Header>
+        {slices.map((slice, index) => (
+          <DataTable.Row key={index}>
+            <DataTable.Cell numeric>{this.formatTime(slice.startTime)}</DataTable.Cell>
+            <DataTable.Cell numeric>{this.formatTime(slice.endTime)}</DataTable.Cell>
+            <DataTable.Cell numeric>{this.formatTime(slice.duration)}</DataTable.Cell>
+          </DataTable.Row>
+        ))}
+        {slices.length === 0 && (
+          <ThemedText type="subtitle" style={styles.noSlicesText}>
+            No slices recorded
+          </ThemedText>
+        )}
+      </DataTable>
+    );
+  };
+
   render() {
     return (
       <SafeAreaView>
@@ -163,7 +181,7 @@ class TimerClass extends React.Component<Props, StopwatchState> {
                 const stopwatch = this.state.stopwatch;
                 if (slices.length > 1 && stopwatch.isRunning()) {
                   stopwatch.slice();
-                  this.updateSlices();
+                  this.updateSlicesState();
                 }
                 this.handleClearInterval();
               }}
@@ -185,30 +203,7 @@ class TimerClass extends React.Component<Props, StopwatchState> {
             <View style={styles.lapContainer}>
             <View style={styles.slicesContainer}>
               <ThemedText type="subtitle">Slices:</ThemedText>
-              
-              <DataTable>
-              <DataTable.Header>
-                <DataTable.Title numeric>Start Time</DataTable.Title>
-                <DataTable.Title numeric>End Time</DataTable.Title>
-                <DataTable.Title numeric>Total Duration</DataTable.Title>
-              </DataTable.Header>
-              {this.state.slices?.map((slice, index) => (
-                <DataTable.Row key={index}>
-                <DataTable.Cell numeric>{this.formatTime(slice.startTime)}</DataTable.Cell>
-                <DataTable.Cell numeric>{this.formatTime(slice.endTime)}</DataTable.Cell>
-                <DataTable.Cell numeric>{this.formatTime(slice.duration)}</DataTable.Cell>
-                </DataTable.Row>
-              ))}
-
-              {(this.state.slices?.length ?? 0) === 0 && (
-                <ThemedText 
-                  type="subtitle"
-                  style={styles.noSlicesText}
-                  >
-                    No slices recorded
-                </ThemedText>
-              )}
-              </DataTable>
+                {this.renderSlices()}
             </View>
             </View>
         </ThemedView>
